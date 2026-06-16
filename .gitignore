@@ -1,0 +1,22 @@
+# Build artifacts
+build/
+*.exe
+*.obj
+*.o
+*.lib
+*.dll
+*.pdb
+
+# Data and test payloads
+data/
+*.bin
+*.enc
+
+# Temporary and planning documents
+CRITICAL_EVALUATION.md
+IMPLEMENTATION_PLAN.md
+PROJECT_CONTEXT_FULL.md
+
+# OS generated files
+.DS_Store
+Thumbs.db
