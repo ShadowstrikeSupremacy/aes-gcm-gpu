@@ -12,11 +12,6 @@ data/
 *.bin
 *.enc
 
-# Temporary and planning documents
-CRITICAL_EVALUATION.md
-IMPLEMENTATION_PLAN.md
-PROJECT_CONTEXT_FULL.md
-
 # OS generated files
 .DS_Store
 Thumbs.db
