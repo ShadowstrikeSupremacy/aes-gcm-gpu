@@ -3,6 +3,8 @@
 [![Status](https://img.shields.io/badge/CPU%20Baseline-Verified-success)]()
 [![Status](https://img.shields.io/badge/GPU%20Pipeline-4%2F4%20Phases%20Complete-success)]()
 [![Tests](https://img.shields.io/badge/NIST%20Vectors-7%2F7%20PASS-success)]()
+[![Web UI](https://img.shields.io/badge/Web%20UI-Live-blue)]()
+[![Deploy](https://img.shields.io/badge/Deploy-Render%20%7C%20Docker-blueviolet)]()
 [![License](https://img.shields.io/badge/license-MIT-blue)]()
 
 A from-scratch, dependency-free implementation of **AES-128/256-GCM** (Galois/Counter Mode authenticated encryption), built around a **security-hardened, NIST-verified CPU baseline** and engineered explicitly as the substrate for a **4-phase CUDA acceleration pipeline**.
@@ -10,6 +12,80 @@ A from-scratch, dependency-free implementation of **AES-128/256-GCM** (Galois/Co
 This is not a toy AES implementation wrapped in CUDA boilerplate. Every primitive — the CTR keystream generation, the GHASH polynomial evaluation, the tag comparison — was designed with its eventual **massively-parallel GPU execution** in mind: register-resident state, GF(2¹²⁸) tree-reduction, MapReduce-style chunking for arbitrarily large payloads. The result is a single codebase that runs correctly on a CPU today and saturates a GPU's SMs without architectural rewrites.
 
 > 📡 **Why this exists:** Built against the methodology in *"A High-Throughput AES-GCM Implementation on GPUs for Secure, Policy-Based Access to Massive Astronomical Catalogs"* — the target workload is bulk, policy-gated decryption of multi-gigabyte scientific datasets, where AES-NI alone can't keep up with modern storage I/O.
+
+---
+
+## 🌐 Web UI
+
+An interactive browser-based interface for encrypting, decrypting, and demonstrating tamper detection — no command line required.
+
+**Encrypt panel** — type any message, optionally supply your own key/IV (or click Generate for a cryptographically random one), hit Encrypt. The ciphertext, auth tag, key, and IV are all displayed with one-click copy buttons.
+
+**Decrypt & Verify panel** — paste ciphertext + tag + key + IV, or click **⇒ Fill Decrypt Panel** after encrypting to auto-populate everything. The result shows either a green **✅ AUTHENTICATED** badge with the recovered plaintext, or a red **❌ AUTHENTICATION FAILED** badge (plaintext is withheld and the output buffer is zeroed).
+
+**Tamper Simulation** — one button flips a single bit in the ciphertext before decrypting, proving that even a 1-bit change anywhere in the message is reliably detected. The badge shakes on failure.
+
+A status badge in the header shows whether the engine is running in **C++ Engine** mode (local build) or **Python / OpenSSL** mode (cloud deployment) — both produce NIST-identical results.
+
+### Run locally
+
+```bash
+# First build the project (see Build & Execution Guide below)
+python server.py
+# Open http://localhost:8080
+```
+
+On Windows, double-click `run_ui.bat` — it starts the server and opens the browser automatically.
+
+---
+
+## 🚀 Deploy Online
+
+### Option 1 — Instant public link with ngrok
+
+The fastest way to share a live demo from your own machine. The C++ engine (including CUDA, if available) runs locally; ngrok creates a secure tunnel to it.
+
+```bash
+# 1. Download ngrok from https://ngrok.com/download  (free account required)
+# 2. Authenticate once
+ngrok config add-authtoken <YOUR_TOKEN>
+
+# 3. Start the server
+python server.py
+
+# 4. In a second terminal, open the tunnel
+ngrok http 8080
+```
+
+ngrok prints a public HTTPS URL like `https://abc123.ngrok-free.app` — share it with anyone. The tunnel stays live as long as both processes are running. No port forwarding or firewall changes needed.
+
+### Option 2 — Permanent cloud hosting with Render
+
+`server.py` automatically falls back to Python's `cryptography` library (OpenSSL-backed, NIST-identical) when the C++ binary isn't present, making it deployable on any Linux cloud with zero native dependencies.
+
+1. Push this repository to GitHub.
+2. Go to [render.com](https://render.com) → **New Web Service** → connect your repo.
+3. Set the following in the Render dashboard:
+
+   | Setting | Value |
+   |---|---|
+   | **Runtime** | Python 3 |
+   | **Build command** | `pip install -r requirements.txt` |
+   | **Start command** | `python server.py` |
+
+4. Click **Deploy**. Render sets the `PORT` environment variable automatically.
+
+The live URL is available immediately after the first deploy completes.
+
+### Option 3 — Docker
+
+```bash
+docker build -t aes-gcm-ui .
+docker run -p 8080:8080 aes-gcm-ui
+# Open http://localhost:8080
+```
+
+Push to any container registry (Docker Hub, GHCR, ECR) and deploy to Cloud Run, Fly.io, or any container platform.
 
 ---
 
@@ -147,6 +223,10 @@ aes-gcm-gpu/
 │   ├── demo.cpp                # CLI: encrypt / decrypt / tamper
 │   └── bench_gpu.cu            # GPU correctness gate + throughput benchmark
 │
+├── server.py                 # Web UI server — C++ binary or Python/OpenSSL fallback
+├── run_ui.bat                # Windows one-click launcher
+├── requirements.txt          # Python deps for cloud deployment (cryptography)
+├── Dockerfile                # Container image for cloud platforms
 └── CMakeLists.txt            # Dynamic CUDA detection
 ```
 
